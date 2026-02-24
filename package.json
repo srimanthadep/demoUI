@@ -1,0 +1,12 @@
+{
+    "name": "school-fee-management-demo",
+    "version": "1.0.0",
+    "description": "St Aloysius High School - Demo UI",
+    "scripts": {
+        "install": "cd frontend && npm install",
+        "dev": "cd frontend && npm run dev",
+        "build": "cd frontend && npm run build",
+        "preview": "cd frontend && npm run preview"
+    },
+    "private": true
+}
