@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation } from 're
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from './hooks/useDarkMode';
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
 
 // ── Sidebar ────────────────────────────────────────────────────
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+    const { settings } = useSettings();
     return (
         <>
             <AnimatePresence>
@@ -51,7 +53,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
             </AnimatePresence>
             <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
                 <div className="sidebar-logo">
-                    <h2 style={{ fontSize: 18 }}>St Aloysius High School</h2>
+                    <h2 style={{ fontSize: 18 }}>{settings.schoolName || 'School Fee Management'}</h2>
                     <p style={{ fontSize: 11, opacity: 0.75 }}>Fee &amp; Salary Management</p>
                 </div>
                 <nav className="sidebar-nav">
@@ -256,6 +258,7 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
+                <SettingsProvider>
                 <NotificationProvider>
                     <BrowserRouter>
                         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -272,6 +275,7 @@ export default function App() {
                         />
                     </BrowserRouter>
                 </NotificationProvider>
+                </SettingsProvider>
             </AuthProvider>
         </QueryClientProvider>
     );
