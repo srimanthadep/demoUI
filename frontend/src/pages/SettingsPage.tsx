@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import API from '../utils/api';
 import toast from 'react-hot-toast';
 import { useNotifications } from '../context/NotificationContext';
+import { useSettings } from '../context/SettingsContext';
 import { getCurrentAcademicYear } from '../utils/academicYear';
 import { MdSave, MdSettings, MdAccountBalance, MdMenuBook, MdLockOutline } from 'react-icons/md';
 import { Settings, FeeStructure, BookFeeStructure } from '../types';
@@ -16,6 +17,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
     const { addNotification } = useNotifications();
+    const { refreshSettings } = useSettings();
     const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [passLoading, setPassLoading] = useState(false);
     const [editFee, setEditFee] = useState<string | null>(null);
@@ -42,6 +44,7 @@ export default function SettingsPage() {
         try {
             await API.put('/settings', settings);
             toast.success('Settings saved!');
+            refreshSettings();
             addNotification({
                 type: 'info',
                 title: 'System Settings Updated',
