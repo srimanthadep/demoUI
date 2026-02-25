@@ -7,6 +7,7 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
+            filename: 'service-worker.js',
             includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
             manifest: false,
             devOptions: {
