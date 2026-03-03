@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 import { Staff, SalaryPayment, StaffListResponse } from '../types';
 
 // Components
-import StaffTable from '../components/staff/StaffTable';
+import StaffCards from '../components/staff/StaffCards';
 import StaffForm from '../components/staff/StaffForm';
 import SalaryModal from '../components/staff/SalaryModal';
 import StaffHistoryModal from '../components/staff/StaffHistoryModal';
@@ -62,6 +62,7 @@ export default function StaffPage() {
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
     const [yearFilter, setYearFilter] = useState(getCurrentAcademicYear());
+    const [statusFilter, setStatusFilter] = useState('');
     const [sortField, setSortField] = useState('staffId');
     const [sortDir, setSortDir] = useState(1);
 
@@ -161,9 +162,10 @@ export default function StaffPage() {
     }), [sortedStaff]);
 
     const filteredStaff: Staff[] = useMemo(() => {
-        if (!search) return sortedStaff;
-        return fuse.search(search).map(r => r.item);
-    }, [search, sortedStaff, fuse]);
+        let result = search ? fuse.search(search).map(r => r.item) : sortedStaff;
+        if (statusFilter) result = result.filter(s => getStatus(s) === statusFilter);
+        return result;
+    }, [search, sortedStaff, fuse, statusFilter]);
 
     // Derived states
     const showLeaves = useMemo(() => staff.find(s => s._id === showLeavesId) || null, [staff, showLeavesId]);
@@ -467,11 +469,27 @@ export default function StaffPage() {
                     Found <strong>{totalStaffCount}</strong> staff members •
                     Showing <strong>{staff.length}</strong> on this page
                 </div>
+                <div className="status-filter-pills" role="group" aria-label="Filter staff by salary status">
+                    {[
+                        { label: 'All Staff', value: '' },
+                        { label: 'Paid', value: 'paid' },
+                        { label: 'Due', value: 'unpaid' },
+                    ].map(opt => (
+                        <button
+                            key={opt.value}
+                            className={`status-filter-pill${statusFilter === opt.value ? ' active' : ''}`}
+                            aria-pressed={statusFilter === opt.value}
+                            onClick={() => { setStatusFilter(opt.value); setPage(1); }}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
             </motion.div >
 
-            {/* Table */}
+            {/* Cards */}
             <div className="card">
-                <StaffTable
+                <StaffCards
                     staff={filteredStaff}
                     isLoading={isLoading}
                     onEdit={openEdit}
@@ -490,9 +508,6 @@ export default function StaffPage() {
                     downloadLatestPayslip={downloadLatestPayslip}
                     onViewHistory={openHistory}
                     onViewLeaves={(s) => setShowLeavesId(s._id)}
-                    sortField={sortField}
-                    sortDir={sortDir}
-                    toggleSort={toggleSort}
                     getStatus={getStatus}
                     roleDisplay={ROLE_DISPLAY}
                 />
