@@ -4,13 +4,21 @@ import { User, AuthContextType } from '../types';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const DEMO_USER: User = {
+    _id: 'demo',
+    name: 'Demo Admin',
+    email: 'demo@oxfordschool.cc',
+    role: 'owner',
+    isActive: true,
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(() => {
         const u = localStorage.getItem('sfm_user');
         try {
-            return u ? JSON.parse(u) : null;
+            return u ? JSON.parse(u) : DEMO_USER;
         } catch {
-            return null;
+            return DEMO_USER;
         }
     });
     const [loading, setLoading] = useState(true);
@@ -26,10 +34,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .catch(() => {
                     localStorage.removeItem('sfm_token');
                     localStorage.removeItem('sfm_user');
-                    setUser(null);
+                    setUser(DEMO_USER);
                 })
                 .finally(() => setLoading(false));
         } else {
+            setUser(DEMO_USER);
             setLoading(false);
         }
     }, []);
@@ -37,9 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Fix #21: Listen for the auth:logout event dispatched by the API interceptor
     useEffect(() => {
         const handleAuthLogout = () => {
-            setUser(null);
-            // Navigate to /login via React Router — see App.tsx for how this is handled
-            window.location.href = '/login'; // fallback since we can't access navigate() here
+            setUser(DEMO_USER);
+            window.location.href = '/dashboard';
         };
         window.addEventListener('auth:logout', handleAuthLogout);
         return () => window.removeEventListener('auth:logout', handleAuthLogout);
@@ -57,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = () => {
         localStorage.removeItem('sfm_token');
         localStorage.removeItem('sfm_user');
-        setUser(null);
+        setUser(DEMO_USER);
     };
 
     // Fix #26: refreshUser re-fetches user data from API, fixing stale data after profile updates
