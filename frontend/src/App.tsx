@@ -12,7 +12,6 @@ import InstallPromptBanner from './components/InstallPromptBanner';
 import { usePWA } from './hooks/usePWA';
 
 // Lazy Loaded Pages
-const LoginPage = lazy(() => import('./pages/LoginPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const StudentsPage = lazy(() => import('./pages/StudentsPage'));
 const StaffPage = lazy(() => import('./pages/StaffPage'));
@@ -273,7 +272,7 @@ interface ProtectedRouteProps {
 function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
     const { user, loading } = useAuth();
     if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) return <Navigate to="/dashboard" replace />;
 
     // Only specified roles allowed
     if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -294,7 +293,6 @@ function AppRoutes() {
     if (isAdminDomain || (isLocal && window.location.pathname.startsWith('/admin'))) {
         return (
             <Routes>
-                <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/admin" replace />} />
                 <Route element={
                     <ProtectedRoute allowedRoles={['admin', 'owner']}>
                         <AdminLayoutWrapper />
@@ -302,7 +300,7 @@ function AppRoutes() {
                 }>
                     <Route path="/admin" element={<AdminPage />} />
                 </Route>
-                <Route path="/" element={<Navigate to={user ? '/admin' : '/login'} replace />} />
+                <Route path="/" element={<Navigate to="/admin" replace />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         );
@@ -310,8 +308,6 @@ function AppRoutes() {
 
     return (
         <Routes>
-            <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={user.role === 'staff' ? '/portal/staff' : user.role === 'student' ? '/portal/student' : '/dashboard'} replace />} />
-
             {/* Admin Layout Perspective */}
             <Route element={
                 <ProtectedRoute allowedRoles={['admin', 'owner']}>
@@ -341,7 +337,7 @@ function AppRoutes() {
                 </ProtectedRoute>
             } />
 
-            <Route path="/" element={<Navigate to={user ? (user.role === 'staff' ? '/portal/staff' : user.role === 'student' ? '/portal/student' : '/dashboard') : '/login'} replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
