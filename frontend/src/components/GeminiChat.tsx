@@ -371,9 +371,7 @@ export default function GeminiChat() {
                 title="Ask SchoolBot (AI)"
                 aria-label="Open Gemini AI chat"
             >
-                <motion.img
-                    src="/gemini-logo.png"
-                    alt="Gemini AI"
+                <motion.span
                     animate={{
                         scale: [1, 1.12, 1],
                         rotate: [0, 8, -8, 0]
@@ -382,8 +380,10 @@ export default function GeminiChat() {
                         scale: { duration: 2.8, repeat: Infinity, ease: 'easeInOut' },
                         rotate: { duration: 2.8, repeat: Infinity, ease: 'easeInOut' }
                     }}
-                    style={{ width: 38, height: 38, objectFit: 'contain' }}
-                />
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <GeminiLogo size={38} />
+                </motion.span>
             </motion.button>
 
             {/* Chat Window */}
