@@ -9,7 +9,7 @@ interface PaymentHistoryModalProps {
     isOwner: boolean;
     settings: any;
     onClose: () => void;
-    onDownload: (student: Student, payment: any) => void;
+    onDownload: (student: Student, payment: any, settings: any) => void;
     onEdit: (payment: any) => void;
     onDelete: (id: string) => void;
 }
@@ -64,7 +64,7 @@ export default function PaymentHistoryModal({
                                                 <th>Type</th>
                                                 <th>Date</th>
                                                 <th>Mode</th>
-                                                <th>Remarks</th>
+                                                <th>Fee Receipt Change</th>
                                                 <th>Download</th>
                                                 {isOwner && (
                                                     <>
@@ -85,7 +85,7 @@ export default function PaymentHistoryModal({
                                                     <td style={{ fontSize: 12, color: '#6b7280' }}>{p.remarks || '-'}</td>
                                                     <td>
                                                         <button className="btn btn-secondary btn-sm" title="Download Receipt"
-                                                            onClick={() => onDownload(show, p)}>
+                                                            onClick={() => onDownload(show, p, settings)}>
                                                             <MdDownload />
                                                         </button>
                                                     </td>

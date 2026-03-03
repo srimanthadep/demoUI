@@ -103,7 +103,7 @@ export default function StudentsPage() {
     const [classFilter, setClassFilter] = useState('');
     const [yearFilter, setYearFilter] = useState(getCurrentAcademicYear());
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-    const [sortField, setSortField] = useState('name');
+    const [sortField, setSortField] = useState('rollNo');
     const [sortDir, setSortDir] = useState(1);
 
     const debouncedSearch = useMemo(
@@ -137,7 +137,20 @@ export default function StudentsPage() {
     const totalStudents = data?.total || 0;
 
     const sortedStudents = useMemo(() => {
+        const classOrder = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
         return [...students].sort((a: any, b: any) => {
+            if (sortField === 'rollNo') {
+                const classA = classOrder.indexOf(a.class);
+                const classB = classOrder.indexOf(b.class);
+                if (classA !== classB) return (classA - classB) * sortDir;
+                return (a.rollNo || '').localeCompare(b.rollNo || '', undefined, { numeric: true }) * sortDir;
+            }
+            if (sortField === 'class') {
+                const classA = classOrder.indexOf(a.class);
+                const classB = classOrder.indexOf(b.class);
+                if (classA !== classB) return (classA - classB) * sortDir;
+                return (a.rollNo || '').localeCompare(b.rollNo || '', undefined, { numeric: true }) * sortDir;
+            }
             let valA = a[sortField];
             let valB = b[sortField];
             if (typeof valA === 'string') valA = valA.toLowerCase();
@@ -355,10 +368,44 @@ export default function StudentsPage() {
                                 </button>
                             </div>
                         )}
-                        <button className="btn btn-secondary btn-sm" onClick={() => exportStudentsExcel(students)}>
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            disabled={isLoading}
+                            onClick={async () => {
+                                const loadingToast = toast.loading('Preparing Excel export...');
+                                try {
+                                    const params: any = { limit: 1000 }; // High limit to get all
+                                    if (classFilter) params.class = classFilter;
+                                    if (yearFilter) params.academicYear = yearFilter;
+                                    if (search) params.search = search;
+                                    const res = await API.get('/students', { params });
+                                    exportStudentsExcel(res.data.students);
+                                    toast.success('Excel exported!', { id: loadingToast });
+                                } catch (err) {
+                                    toast.error('Export failed', { id: loadingToast });
+                                }
+                            }}
+                        >
                             <MdTableChart /> Excel
                         </button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => exportStudentsPDF(sortedStudents, settings)}>
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            disabled={isLoading}
+                            onClick={async () => {
+                                const loadingToast = toast.loading('Preparing PDF report...');
+                                try {
+                                    const params: any = { limit: 1000 };
+                                    if (classFilter) params.class = classFilter;
+                                    if (yearFilter) params.academicYear = yearFilter;
+                                    if (search) params.search = search;
+                                    const res = await API.get('/students', { params });
+                                    exportStudentsPDF(res.data.students, settings);
+                                    toast.success('PDF exported!', { id: loadingToast });
+                                } catch (err) {
+                                    toast.error('Export failed', { id: loadingToast });
+                                }
+                            }}
+                        >
                             <MdPictureAsPdf /> PDF
                         </button>
                         {(isAdmin || isOwner) && (

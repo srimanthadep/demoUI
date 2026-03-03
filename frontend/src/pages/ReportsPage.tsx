@@ -19,6 +19,7 @@ const TABS = [
 export default function ReportsPage() {
     const [activeTab, setActiveTab] = useState('classwise');
     const [classFilter, setClassFilter] = useState('');
+    const [page, setPage] = useState(1);
 
     const CLASSES = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
 
@@ -34,11 +35,19 @@ export default function ReportsPage() {
 
     // Report data with TanStack Query
     const { data: reportData, isLoading: loading } = useQuery({
-        queryKey: ['report', activeTab, classFilter],
+        queryKey: ['report', activeTab, classFilter, page],
         queryFn: async () => {
             let res;
             if (activeTab === 'classwise') res = await API.get('/reports/classwise-fees');
-            else if (activeTab === 'pending') res = await API.get('/reports/pending-fees', { params: classFilter ? { class: classFilter } : {} });
+            else if (activeTab === 'pending') {
+                res = await API.get('/reports/pending-fees', {
+                    params: {
+                        class: classFilter || undefined,
+                        page,
+                        limit: 50
+                    }
+                });
+            }
             else if (activeTab === 'monthly') res = await API.get('/reports/monthly');
             else if (activeTab === 'salary') res = await API.get('/reports/salary');
             return res.data;
@@ -80,7 +89,7 @@ export default function ReportsPage() {
                     <div className="card-body" style={{ padding: '0 24px 24px' }}>
                         <div className="chart-container" style={{ height: 320 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                                     <defs>
                                         <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
@@ -93,7 +102,7 @@ export default function ReportsPage() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis dataKey="class" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                                    <YAxis axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                    <YAxis width={50} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
                                     <Tooltip
                                         contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                                         formatter={v => formatCurrency(v)}
@@ -182,7 +191,10 @@ export default function ReportsPage() {
                     <div className="search-bar glass" style={{ width: 200, padding: '4px 12px' }}>
                         <MdFilterList style={{ color: '#64748b' }} />
                         <select className="form-control" style={{ border: 'none', background: 'transparent' }} value={classFilter}
-                            onChange={e => setClassFilter(e.target.value)}>
+                            onChange={e => {
+                                setClassFilter(e.target.value);
+                                setPage(1);
+                            }}>
                             <option value="">All Classes</option>
                             {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
@@ -201,8 +213,7 @@ export default function ReportsPage() {
                                 {(data.pendingStudents || []).map((s, idx) => (
                                     <motion.tr
                                         key={s._id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                         transition={{ delay: idx * 0.02 }}
                                         className="hover-lift"
                                     >
@@ -225,6 +236,13 @@ export default function ReportsPage() {
                             </tbody>
                         </table>
                     </div>
+                    {data.pages > 1 && (
+                        <div className="pagination" style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 10, paddingBottom: 15 }}>
+                            <button className="btn btn-sm btn-ghost" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Previous</button>
+                            <span style={{ fontSize: 13, fontWeight: 600, alignSelf: 'center' }}>Page {page} of {data.pages}</span>
+                            <button className="btn btn-sm btn-ghost" disabled={page === data.pages} onClick={() => setPage(p => Math.min(data.pages, p + 1))}>Next</button>
+                        </div>
+                    )}
                 </div>
             </motion.div>
         );
@@ -232,7 +250,7 @@ export default function ReportsPage() {
 
     const renderMonthly = () => {
         if (!data?.report) return null;
-        const chartData = data.report.map(r => ({ ...r, profit: r.income - r.expense }));
+        const chartData = [...data.report].reverse().map(r => ({ ...r, profit: r.income - r.expense }));
 
         return (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -274,7 +292,7 @@ export default function ReportsPage() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                    <YAxis width={50} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
                                     <Tooltip
                                         contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                                         formatter={v => formatCurrency(v)}
