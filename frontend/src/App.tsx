@@ -66,13 +66,15 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             </AnimatePresence>
             <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
                 <div className="sidebar-logo">
-                    <motion.img
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                        src="/logo.png"
-                        alt={`${schoolName} Logo`}
-                        style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', mixBlendMode: 'screen', marginBottom: 6 }}
-                    />
+                    {settings.logoUrl && (
+                        <motion.img
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            src={settings.logoUrl}
+                            alt={`${schoolName} Logo`}
+                            style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', mixBlendMode: 'screen', marginBottom: 6 }}
+                        />
+                    )}
                     <h2>{schoolName}</h2>
                     <p style={{ fontSize: 11, opacity: 0.75 }}>Chityala &bull; Fee &amp; Salary Management</p>
                 </div>
@@ -131,6 +133,7 @@ interface AdminLayoutWrapperProps {
 function AdminLayoutWrapper() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { user } = useAuth();
+    const { settings } = useSettings();
     const location = useLocation();
     const { isDark, toggle } = useDarkMode();
     useTheme(); // Apply persisted theme on mount
@@ -231,8 +234,10 @@ function AdminLayoutWrapper() {
                                 cursor: 'pointer'
                             }}
                         >
-                            <img src="/logo.png" alt="logo"
-                                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                            {settings.logoUrl && (
+                                <img src={settings.logoUrl} alt="logo"
+                                    style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                            )}
                             <div className="user-info-text">
                                 <div className="user-name" style={{ fontSize: 13, fontWeight: 600 }}>{user?.name || 'School Admin'}</div>
                                 <div className="user-role" style={{ fontSize: 10, color: '#64748b' }}>{user?.role === 'owner' ? '👑 Main Admin' : 'Staff Access'}</div>
