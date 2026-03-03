@@ -7,9 +7,42 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            filename: 'service-worker.js',
-            includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
-            manifest: false,
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+            manifest: {
+                name: 'Oxford School Management',
+                short_name: 'OxfordSchool',
+                description: 'School Fee & Salary Management System',
+                theme_color: '#4f46e5',
+                background_color: '#ffffff',
+                display: 'standalone',
+                orientation: 'portrait',
+                icons: [
+                    {
+                        src: 'pwa-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                        purpose: 'any'
+                    },
+                    {
+                        src: 'maskable-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                        purpose: 'maskable'
+                    },
+                    {
+                        src: 'pwa-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        purpose: 'any'
+                    },
+                    {
+                        src: 'maskable-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        purpose: 'maskable'
+                    }
+                ]
+            },
             devOptions: {
                 enabled: true
             }

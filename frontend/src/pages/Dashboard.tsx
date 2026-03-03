@@ -8,17 +8,46 @@ import {
 import {
     MdPeople, MdSchool, MdAccountBalance, MdWarning,
     MdPayments, MdTrendingUp, MdReceipt, MdCheckCircle, MdRefresh, MdMenuBook,
-    MdArrowUpward, MdArrowDownward, MdGetApp
+    MdArrowUpward, MdArrowDownward, MdGetApp, MdBackup
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePWA } from '../hooks/usePWA';
+import toast from 'react-hot-toast';
 
 const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'];
 
 export default function Dashboard() {
     const queryClient = useQueryClient();
     const { isInstallable, installApp } = usePWA();
+    const [backupLoading, setBackupLoading] = useState(false);
+
+    const handleBackup = async () => {
+        if (!window.confirm('Start a full database backup? This may take a moment.')) return;
+        setBackupLoading(true);
+        try {
+            const res = await API.post('/backup/download', {}, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/zip' }));
+            const link = document.createElement('a');
+            link.href = url;
+            const disposition = res.headers['content-disposition'];
+            const match = disposition?.match(/filename[^;=\n]*=['"]?([^'"\n;]*)/);
+            const filename = match?.[1] || 'school_backup.zip';
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Backup downloaded successfully!');
+        } catch (err: any) {
+            const message = err.response?.status === 429
+                ? 'A backup is already in progress. Please wait.'
+                : 'Backup failed. Please try again.';
+            toast.error(message);
+        } finally {
+            setBackupLoading(false);
+        }
+    };
 
     const { data: dashboardData, isLoading, refetch, isRefetching } = useQuery({
         queryKey: ['dashboard_stats'],
@@ -72,7 +101,15 @@ export default function Dashboard() {
                     <h1 style={{ fontSize: 'clamp(20px, 5vw, 28px)', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.5px' }}>School Analytics</h1>
                     <p style={{ color: '#64748b', fontSize: 13 }}>Real-time institution overview</p>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="dashboard-action-buttons" style={{ display: 'flex', gap: 12 }}>
+                    <button
+                        className="btn btn-secondary hover-lift"
+                        onClick={handleBackup}
+                        disabled={backupLoading}
+                        style={{ gap: 8, borderRadius: 12, padding: '12px 20px', background: backupLoading ? '#94a3b8' : 'linear-gradient(135deg, #059669, #10b981)', color: 'white', border: 'none' }}
+                    >
+                        <MdBackup className={backupLoading ? 'spin' : ''} /> {backupLoading ? 'Preparing backup…' : 'Download Backup'}
+                    </button>
                     {isInstallable && (
                         <button
                             className="btn btn-secondary hover-lift"
@@ -161,7 +198,7 @@ export default function Dashboard() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                    <YAxis width={50} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
                                     <Tooltip
                                         contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                                         formatter={v => formatCurrency(v)}
@@ -225,7 +262,7 @@ export default function Dashboard() {
                             <BarChart data={classWiseData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="class" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                                <YAxis axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                <YAxis width={50} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#64748b' }} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                                     formatter={v => formatCurrency(v)}

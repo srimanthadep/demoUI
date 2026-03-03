@@ -2,16 +2,27 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-const SCHOOL_NAME = 'St Aloysius High School';
-const SCHOOL_ADDRESS = 'Moula Ali, Hyderabad, Telangana';
-const SCHOOL_PHONE = '+91 98480 11234';
+const SCHOOL_NAME = 'Oxford School Chityala';
+const SCHOOL_ADDRESS = 'Chityala, Nalgonda District, Telangana';
+const SCHOOL_PHONE = '+91 98765 43210';
 
 // PDF-safe currency format (jsPDF helvetica cannot render ₹ Unicode)
 const pdfRs = (amount) => `Rs. ${Number(amount || 0).toLocaleString('en-IN')}`;
 
 // Load logo as base64 for PDF embedding
 async function getLogoBase64() {
-    return null; // Removed logo as per user request
+    try {
+        const response = await fetch('/logo.png');
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+        });
+    } catch {
+        return null;
+    }
 }
 
 // ── Format currency ──────────────────────────────────────────────────
@@ -29,6 +40,7 @@ export const formatDate = (date) => {
 // ── Fee Receipt PDF ──────────────────────────────────────────────────
 export const generateFeeReceiptPDF = async (student, payment, settings = {}) => {
     const doc = new jsPDF({ format: 'a5', unit: 'mm' });
+    // Fix #24: Use settings.schoolName like the export functions do, falling back to constant
     const schoolName = settings.schoolName || SCHOOL_NAME;
     const pageW = doc.internal.pageSize.getWidth();
 
@@ -143,7 +155,7 @@ export const generateFeeReceiptPDF = async (student, payment, settings = {}) => 
     // Payment mode
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 100, 100);
     doc.text(`Payment Mode: ${(payment.paymentMode || 'cash').replace('_', ' ').toUpperCase()}`, 8, finalY + 6);
-    if (payment.remarks) doc.text(`Remarks: ${payment.remarks}`, 8, finalY + 11);
+    if (payment.remarks) doc.text(`Fee Receipt Change: ${payment.remarks}`, 8, finalY + 11);
 
     // Status badge
     const status = pendingAmt <= 0 ? 'FULLY PAID' : 'PARTIAL PAYMENT';
@@ -177,6 +189,7 @@ export const generateFeeReceiptPDF = async (student, payment, settings = {}) => 
 // ── Salary Slip PDF ──────────────────────────────────────────────────
 export const generateSalarySlipPDF = async (staff, payment, settings = {}) => {
     const doc = new jsPDF({ format: 'a5', unit: 'mm' });
+    // Fix #24: Use settings.schoolName like the export functions do, falling back to constant
     const schoolName = settings.schoolName || SCHOOL_NAME;
     const pageW = doc.internal.pageSize.getWidth();
 
@@ -270,39 +283,49 @@ export const generateSalarySlipPDF = async (staff, payment, settings = {}) => {
 
 // ── Export Students Excel ────────────────────────────────────────────
 export const exportStudentsExcel = (students) => {
-    const data = students.map(s => ({
-        'Student ID': s.studentId,
-        'Name': s.name,
-        'Class': s.class,
+    const data = students.map(s => {
+        const row = {
+            'Student ID': s.studentId,
+            'Name': s.name,
+            'Class': s.class,
+            'Roll No': s.rollNo,
+            'Gender': s.gender,
+            'Parent Name': s.parentName,
+            'Parent Phone': s.parentPhone,
+            'Parent Email': s.parentEmail || '',
+            'Total Fee': s.totalFee,
+            'Total Paid': s.totalPaid,
+            'Pending Amount': s.pendingAmount,
+            'Payment Status': (s.paymentStatus || 'unpaid').toUpperCase(),
+            'Admission Date': formatDate(s.admissionDate)
+        };
 
-        'Roll No': s.rollNo,
-        'Gender': s.gender,
-        'Parent Name': s.parentName,
-        'Parent Phone': s.parentPhone,
-        'Parent Email': s.parentEmail || '',
-        'Total Fee': s.totalFee,
-        'Total Paid': s.totalPaid,
-        'Pending Amount': s.pendingAmount,
-        'Payment Status': s.paymentStatus,
-        'Admission Date': formatDate(s.admissionDate)
-    }));
+        if (s.feePayments && s.feePayments.length > 0) {
+            const sortedPayments = [...s.feePayments].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+
+            row['Payment History (Concatenated)'] = sortedPayments
+                .map(p => `₹${p.amount} (${p.receiptNo})`)
+                .join('; ');
+
+            sortedPayments.slice(0, 15).forEach((p, idx) => {
+                row[`Payment ${idx + 1}`] = `₹${p.amount} on ${formatDate(p.paymentDate)} [Ref: ${p.receiptNo}]`;
+            });
+        }
+
+        return row;
+    });
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
 
-    // Style header row
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let C = range.s.c; C <= range.e.c; C++) {
-        const addr = XLSX.utils.encode_cell({ r: 0, c: C });
-        if (!ws[addr]) continue;
-        ws[addr].s = { font: { bold: true }, fill: { fgColor: { rgb: '1a237e' } } };
-    }
-
-    ws['!cols'] = [
+    const cols = [
         { wch: 12 }, { wch: 22 }, { wch: 8 }, { wch: 8 }, { wch: 8 },
-        { wch: 22 }, { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 14 }
+        { wch: 22 }, { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 12 },
+        { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 40 }
     ];
+    for (let i = 0; i < 15; i++) cols.push({ wch: 35 });
+    ws['!cols'] = cols;
 
     XLSX.writeFile(wb, `Students_Export_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
 };
@@ -328,20 +351,30 @@ export const exportStudentsPDF = (students, settings = {}) => {
 
     doc.autoTable({
         startY: 32,
-        head: [['ID', 'Name', 'Class', 'Roll', 'Parent', 'Phone', 'Total Fee', 'Paid', 'Pending', 'Status']],
-        body: students.map(s => [
-            s.studentId, s.name, s.class, s.rollNo,
-            s.parentName, s.parentPhone,
-            `₹${Number(s.totalFee).toLocaleString('en-IN')}`,
-            `₹${Number(s.totalPaid).toLocaleString('en-IN')}`,
-            `₹${Number(s.pendingAmount).toLocaleString('en-IN')}`,
-            (s.paymentStatus || 'unpaid').toUpperCase()
-        ]),
+        head: [['ID', 'Name', 'Class', 'Roll', 'Parent', 'Phone', 'Paid', 'Pending', 'Recent Payments']],
+        body: students.map(s => {
+            const lastThree = (s.feePayments || [])
+                .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+                .slice(0, 3)
+                .map(p => `Rs.${p.amount} (${formatDate(p.paymentDate)})`)
+                .join('\n');
+
+            return [
+                s.studentId, s.name, s.class, s.rollNo,
+                s.parentName, s.parentPhone,
+                `Rs.${Number(s.totalPaid).toLocaleString('en-IN')}`,
+                `Rs.${Number(s.pendingAmount).toLocaleString('en-IN')}`,
+                lastThree || '-'
+            ];
+        }),
         headStyles: { fillColor: [26, 35, 126], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-        bodyStyles: { fontSize: 8, cellPadding: 2 },
+        bodyStyles: { fontSize: 7.5, cellPadding: 2 },
         alternateRowStyles: { fillColor: [248, 250, 255] },
         margin: { left: 8, right: 8 },
-        styles: { overflow: 'linebreak' }
+        styles: { overflow: 'linebreak' },
+        columnStyles: {
+            8: { cellWidth: 50, fontSize: 7 }
+        }
     });
 
     doc.save(`Student_Report_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf`);
@@ -349,26 +382,49 @@ export const exportStudentsPDF = (students, settings = {}) => {
 
 // ── Export Staff Excel ───────────────────────────────────────────────
 export const exportStaffExcel = (staff) => {
-    const data = staff.map(s => ({
-        'Staff ID': s.staffId,
-        'Name': s.name,
-        'Role': (s.role || '').replace('_', ' ').toUpperCase(),
-        'Phone': s.phone,
-        'Monthly Salary': s.monthlySalary,
-        'Total Paid': s.totalSalaryPaid,
-        'Academic Year': s.academicYear,
-        'Joining Date': formatDate(s.joiningDate),
-        'Status': s.isActive ? 'Active' : 'Inactive'
-    }));
+    const data = staff.map(s => {
+        const row = {
+            'Staff ID': s.staffId,
+            'Name': s.name,
+            'Role': (s.role || '').replace('_', ' ').toUpperCase(),
+            'Phone': s.phone,
+            'Monthly Salary': s.monthlySalary,
+            'Total Paid': s.totalSalaryPaid || 0,
+            'Academic Year': s.academicYear,
+            'Joining Date': formatDate(s.joiningDate),
+            'Status': s.isActive ? 'Active' : 'Inactive'
+        };
+
+        // Add detailed payment history
+        if (s.salaryPayments && s.salaryPayments.length > 0) {
+            const sortedPayments = [...s.salaryPayments].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+
+            // Add a summary string
+            row['Payment History (Concatenated)'] = sortedPayments
+                .map(p => `${p.month}: ₹${p.amount}`)
+                .join('; ');
+
+            // Add last 12 payments as separate columns
+            sortedPayments.slice(0, 12).forEach((p, idx) => {
+                row[`Payment ${idx + 1}`] = `${p.month}: ₹${p.amount} (${formatDate(p.paymentDate)})`;
+            });
+        }
+
+        return row;
+    });
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Staff');
 
-    ws['!cols'] = [
+    // Adjust column widths
+    const cols = [
         { wch: 12 }, { wch: 22 }, { wch: 18 }, { wch: 14 }, { wch: 14 },
-        { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 10 }
+        { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 40 }
     ];
+    // Add widths for dynamic payment columns
+    for (let i = 0; i < 12; i++) cols.push({ wch: 30 });
+    ws['!cols'] = cols;
 
     XLSX.writeFile(wb, `Staff_Export_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.xlsx`);
 };
@@ -394,20 +450,30 @@ export const exportStaffPDF = (staff, settings = {}) => {
 
     doc.autoTable({
         startY: 32,
-        head: [['ID', 'Name', 'Role', 'Phone', 'Monthly Sal', 'Total Paid', 'Session', 'Joined', 'Status']],
-        body: staff.map(s => [
-            s.staffId, s.name, (s.role || '').toUpperCase(), s.phone,
-            `₹${Number(s.monthlySalary).toLocaleString('en-IN')}`,
-            `₹${Number(s.totalSalaryPaid).toLocaleString('en-IN')}`,
-            s.academicYear,
-            formatDate(s.joiningDate),
-            s.isActive ? 'ACTIVE' : 'INACTIVE'
-        ]),
+        head: [['ID', 'Name', 'Role', 'Phone', 'Monthly Sal', 'Total Paid', 'Session', 'Last 3 Payments']],
+        body: staff.map(s => {
+            const lastThreeSalaries = (s.salaryPayments || [])
+                .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+                .slice(0, 3)
+                .map(p => `${p.month}: Rs.${p.amount}`)
+                .join('\n');
+
+            return [
+                s.staffId, s.name, (s.role || '').toUpperCase(), s.phone,
+                `Rs.${Number(s.monthlySalary).toLocaleString('en-IN')}`,
+                `Rs.${Number(s.totalSalaryPaid).toLocaleString('en-IN')}`,
+                s.academicYear,
+                lastThreeSalaries || '-'
+            ];
+        }),
         headStyles: { fillColor: [26, 35, 126], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-        bodyStyles: { fontSize: 8, cellPadding: 2 },
+        bodyStyles: { fontSize: 7.5, cellPadding: 2 },
         alternateRowStyles: { fillColor: [248, 250, 255] },
         margin: { left: 8, right: 8 },
-        styles: { overflow: 'linebreak' }
+        styles: { overflow: 'linebreak' },
+        columnStyles: {
+            7: { cellWidth: 45, fontSize: 7 }
+        }
     });
 
     doc.save(`Staff_Report_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf`);

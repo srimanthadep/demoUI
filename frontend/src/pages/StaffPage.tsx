@@ -62,7 +62,7 @@ export default function StaffPage() {
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
     const [yearFilter, setYearFilter] = useState(getCurrentAcademicYear());
-    const [sortField, setSortField] = useState('name');
+    const [sortField, setSortField] = useState('staffId');
     const [sortDir, setSortDir] = useState(1);
 
     // Form Modal State
@@ -130,6 +130,9 @@ export default function StaffPage() {
 
     const sortedStaff = useMemo(() => {
         return [...staff].sort((a, b) => {
+            if (sortField === 'staffId') {
+                return (a.staffId || '').localeCompare(b.staffId || '', undefined, { numeric: true }) * sortDir;
+            }
             if (sortField === 'status') {
                 const av = STATUS_ORDER[getStatus(a)] ?? 0;
                 const bv = STATUS_ORDER[getStatus(b)] ?? 0;
@@ -146,6 +149,7 @@ export default function StaffPage() {
             const bv = sortField === 'monthlySalary' ? b.monthlySalary
                 : sortField === 'totalSalaryPaid' ? b.totalSalaryPaid
                     : (b[sortField as keyof Staff] || '');
+
             if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * sortDir;
             return String(av).localeCompare(String(bv)) * sortDir;
         });
@@ -413,10 +417,44 @@ export default function StaffPage() {
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
                         <div className="btn-group">
-                            <button className="btn btn-secondary" onClick={() => exportStaffExcel(filteredStaff)} title="Export to Excel">
+                            <button
+                                className="btn btn-secondary"
+                                disabled={isLoading}
+                                onClick={async () => {
+                                    const loadingToast = toast.loading('Exporting all staff to Excel...');
+                                    try {
+                                        const params: any = { limit: 1000 };
+                                        if (roleFilter) params.role = roleFilter;
+                                        if (yearFilter) params.academicYear = yearFilter;
+                                        const res = await API.get('/staff', { params });
+                                        exportStaffExcel(res.data.staff);
+                                        toast.success('Excel ready!', { id: loadingToast });
+                                    } catch {
+                                        toast.error('Export failed', { id: loadingToast });
+                                    }
+                                }}
+                                title="Export to Excel"
+                            >
                                 <MdTableChart />
                             </button>
-                            <button className="btn btn-secondary" onClick={() => exportStaffPDF(filteredStaff)} title="Export to PDF">
+                            <button
+                                className="btn btn-secondary"
+                                disabled={isLoading}
+                                onClick={async () => {
+                                    const loadingToast = toast.loading('Exporting all staff to PDF...');
+                                    try {
+                                        const params: any = { limit: 1000 };
+                                        if (roleFilter) params.role = roleFilter;
+                                        if (yearFilter) params.academicYear = yearFilter;
+                                        const res = await API.get('/staff', { params });
+                                        exportStaffPDF(res.data.staff, settings);
+                                        toast.success('PDF ready!', { id: loadingToast });
+                                    } catch {
+                                        toast.error('Export failed', { id: loadingToast });
+                                    }
+                                }}
+                                title="Export to PDF"
+                            >
                                 <MdPictureAsPdf />
                             </button>
                         </div>
@@ -554,6 +592,7 @@ export default function StaffPage() {
                 show={!!showDeleteConfirm}
                 title="Delete Staff"
                 message={`Are you sure you want to delete ${showDeleteConfirm?.name}? This action cannot be undone.`}
+                confirmText="Delete Staff"
                 onClose={() => setShowDeleteConfirm(null)}
                 onConfirm={handleDeleteStaff}
                 loading={deleteLoading}
@@ -563,6 +602,7 @@ export default function StaffPage() {
                 show={!!showDeletePaymentConfirm}
                 title="Delete Salary Record"
                 message="Are you sure you want to delete this salary payment? This action cannot be undone."
+                confirmText="Delete Payment"
                 onClose={() => setShowDeletePaymentConfirm(null)}
                 onConfirm={confirmDeleteSalaryPayment}
                 loading={deleteLoading}

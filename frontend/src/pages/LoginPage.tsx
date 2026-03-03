@@ -13,7 +13,7 @@ export default function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.email || !form.password) {
             toast.error('Please enter email and password');
@@ -41,7 +41,7 @@ export default function LoginPage() {
             } else {
                 navigate('/dashboard');
             }
-        } catch (err) {
+        } catch (err: any) {
             toast.error(err.response?.data?.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
@@ -96,16 +96,15 @@ export default function LoginPage() {
                 }}
             >
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                    <div style={{
-                        width: 80, height: 80, borderRadius: '50%', marginBottom: 16,
-                        boxShadow: '0 8px 30px rgba(0,0,0,0.1)',
-                        background: 'linear-gradient(135deg, #1a237e 0%, #311b92 100%)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'white', fontSize: 24, fontWeight: 800, margin: '0 auto 16px'
-                    }}>
-                        SA
-                    </div>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1a237e', letterSpacing: '-0.5px', marginBottom: 4 }}>St Aloysius High School</h1>
+                    <motion.img
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.2 }}
+                        src="/logo.png"
+                        alt="Logo"
+                        style={{ width: 80, height: 80, borderRadius: '50%', marginBottom: 16, boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}
+                    />
+                    <h1 style={{ fontSize: 28, fontWeight: 800, color: '#1a237e', letterSpacing: '-0.5px', marginBottom: 4 }}>Oxford School</h1>
                     <p style={{ color: '#64748b', fontSize: 14 }}>Management System Gateway</p>
                 </div>
 
@@ -195,8 +194,8 @@ export default function LoginPage() {
                 </form>
 
                 <div style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: '#94a3b8' }}>
-                    <p>Protected by Aloysius Security Core</p>
-                    <p style={{ marginTop: 4 }}>© {new Date().getFullYear()} St Aloysius High School</p>
+                    <p>Protected by Oxford Security Core</p>
+                    <p style={{ marginTop: 4 }}>© {new Date().getFullYear()} Oxford School Chityala</p>
                 </div>
             </motion.div>
         </div>
