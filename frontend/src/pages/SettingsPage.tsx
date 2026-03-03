@@ -7,6 +7,7 @@ import { MdSave, MdSettings, MdAccountBalance, MdMenuBook, MdLockOutline, MdUplo
 import { Settings, FeeStructure, BookFeeStructure } from '../types';
 import { useZoom } from '../hooks/useZoom';
 import { useTheme, THEME_PRESETS, buildSidebarGradient, type ThemeColors } from '../hooks/useTheme';
+import { useSettings } from '../context/SettingsContext';
 
 const CLASSES = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
     const { addNotification } = useNotifications();
+    const { refreshSettings } = useSettings();
     const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [passLoading, setPassLoading] = useState(false);
     const [editFee, setEditFee] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function SettingsPage() {
         try {
             await API.put('/settings', settings);
             toast.success('Settings saved!');
+            refreshSettings();
             addNotification({
                 type: 'info',
                 title: 'System Settings Updated',

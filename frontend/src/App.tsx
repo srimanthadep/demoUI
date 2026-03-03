@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation, Outlet } 
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from './hooks/useDarkMode';
@@ -47,6 +48,8 @@ interface SidebarProps {
 
 function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { user, logout } = useAuth();
+    const { settings } = useSettings();
+    const schoolName = settings.schoolName || 'Oxford School';
 
     return (
         <>
@@ -67,10 +70,10 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                         initial={{ scale: 0.8 }}
                         animate={{ scale: 1 }}
                         src="/logo.png"
-                        alt="Oxford School Logo"
+                        alt={`${schoolName} Logo`}
                         style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', mixBlendMode: 'screen', marginBottom: 6 }}
                     />
-                    <h2>Oxford School</h2>
+                    <h2>{schoolName}</h2>
                     <p style={{ fontSize: 11, opacity: 0.75 }}>Chityala &bull; Fee &amp; Salary Management</p>
                 </div>
                 <nav className="sidebar-nav">
@@ -363,6 +366,7 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
+                <SettingsProvider>
                 <NotificationProvider>
                     <BrowserRouter>
                         <Suspense fallback={<div className="loading-spinner"><div className="spinner" /></div>}>
@@ -379,6 +383,7 @@ export default function App() {
                         />
                     </BrowserRouter>
                 </NotificationProvider>
+                </SettingsProvider>
             </AuthProvider>
         </QueryClientProvider>
     );
