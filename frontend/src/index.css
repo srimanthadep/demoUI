@@ -1431,6 +1431,15 @@ html.dark .status-filter-pill.active {
 }
 
 
+/* ===== RESPONSIVE LAYOUT HELPERS ===== */
+.desktop-only { display: block; }
+.mobile-only  { display: none; }
+
+@media (max-width: 768px) {
+  .desktop-only { display: none; }
+  .mobile-only  { display: block; }
+}
+
 .search-bar {
   display: flex;
   align-items: center;
