@@ -16,6 +16,7 @@ import { Staff, SalaryPayment, StaffListResponse } from '../types';
 
 // Components
 import StaffCards from '../components/staff/StaffCards';
+import StaffTable from '../components/staff/StaffTable';
 import StaffForm from '../components/staff/StaffForm';
 import SalaryModal from '../components/staff/SalaryModal';
 import StaffHistoryModal from '../components/staff/StaffHistoryModal';
@@ -487,30 +488,59 @@ export default function StaffPage() {
                 </div>
             </motion.div >
 
-            {/* Cards */}
+            {/* Table (desktop) / Cards (mobile) */}
             <div className="card">
-                <StaffCards
-                    staff={filteredStaff}
-                    isLoading={isLoading}
-                    onEdit={openEdit}
-                    onDelete={setShowDeleteConfirm}
-                    onPaySalary={(s) => {
-                        setShowSalaryId(s._id);
-                        setSalaryForm((f: any) => ({
-                            ...f,
-                            baseAmount: s.monthlySalary,
-                            cuttings: 0,
-                            amount: s.monthlySalary,
-                            month: CURRENT_MONTH,
-                            paymentDate: new Date().toISOString().split('T')[0]
-                        }));
-                    }}
-                    downloadLatestPayslip={downloadLatestPayslip}
-                    onViewHistory={openHistory}
-                    onViewLeaves={(s) => setShowLeavesId(s._id)}
-                    getStatus={getStatus}
-                    roleDisplay={ROLE_DISPLAY}
-                />
+                <div className="desktop-only">
+                    <StaffTable
+                        staff={filteredStaff}
+                        isLoading={isLoading}
+                        onEdit={openEdit}
+                        onDelete={setShowDeleteConfirm}
+                        onPaySalary={(s) => {
+                            setShowSalaryId(s._id);
+                            setSalaryForm((f: any) => ({
+                                ...f,
+                                baseAmount: s.monthlySalary,
+                                cuttings: 0,
+                                amount: s.monthlySalary,
+                                month: CURRENT_MONTH,
+                                paymentDate: new Date().toISOString().split('T')[0]
+                            }));
+                        }}
+                        downloadLatestPayslip={downloadLatestPayslip}
+                        onViewHistory={openHistory}
+                        onViewLeaves={(s) => setShowLeavesId(s._id)}
+                        sortField={sortField}
+                        sortDir={sortDir}
+                        toggleSort={toggleSort}
+                        getStatus={getStatus}
+                        roleDisplay={ROLE_DISPLAY}
+                    />
+                </div>
+                <div className="mobile-only">
+                    <StaffCards
+                        staff={filteredStaff}
+                        isLoading={isLoading}
+                        onEdit={openEdit}
+                        onDelete={setShowDeleteConfirm}
+                        onPaySalary={(s) => {
+                            setShowSalaryId(s._id);
+                            setSalaryForm((f: any) => ({
+                                ...f,
+                                baseAmount: s.monthlySalary,
+                                cuttings: 0,
+                                amount: s.monthlySalary,
+                                month: CURRENT_MONTH,
+                                paymentDate: new Date().toISOString().split('T')[0]
+                            }));
+                        }}
+                        downloadLatestPayslip={downloadLatestPayslip}
+                        onViewHistory={openHistory}
+                        onViewLeaves={(s) => setShowLeavesId(s._id)}
+                        getStatus={getStatus}
+                        roleDisplay={ROLE_DISPLAY}
+                    />
+                </div>
 
                 {/* Pagination Controls */}
                 {!isLoading && totalPages > 1 && (

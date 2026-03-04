@@ -170,6 +170,20 @@ export default function StudentsPage() {
         else { setSortField(field); setSortDir(1); }
     };
 
+    const handleSelect = (id: string) => {
+        setSelectedStudents(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = () => {
+        if (selectedStudents.length === sortedStudents.length && sortedStudents.length > 0) {
+            setSelectedStudents([]);
+        } else {
+            setSelectedStudents(sortedStudents.map(s => s._id));
+        }
+    };
+
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormLoading(true);
@@ -447,16 +461,36 @@ export default function StudentsPage() {
             </div>
 
             <div className="card">
-                <StudentCards
-                    students={sortedStudents}
-                    isLoading={isLoading}
-                    onEdit={(s) => { setEditStudent(s); setFormData({ ...s as any }); setShowForm(true); }}
-                    onDelete={(s) => setShowDeleteConfirm(s)}
-                    onRecordPayment={(s) => setShowPayment(s)}
-                    onViewHistory={openHistory}
-                    onViewProfile={(s) => setShowProfileStudent(s)}
-                    onWhatsApp={handleWhatsApp}
-                />
+                <div className="desktop-only">
+                    <StudentTable
+                        students={sortedStudents}
+                        isLoading={isLoading}
+                        selectedStudents={selectedStudents}
+                        onSelect={handleSelect}
+                        onSelectAll={handleSelectAll}
+                        onEdit={(s) => { setEditStudent(s); setFormData({ ...s as any }); setShowForm(true); }}
+                        onDelete={(s) => setShowDeleteConfirm(s)}
+                        onRecordPayment={(s) => setShowPayment(s)}
+                        onViewHistory={openHistory}
+                        onViewProfile={(s) => setShowProfileStudent(s)}
+                        onWhatsApp={handleWhatsApp}
+                        sortField={sortField}
+                        sortDir={sortDir}
+                        toggleSort={toggleSort}
+                    />
+                </div>
+                <div className="mobile-only">
+                    <StudentCards
+                        students={sortedStudents}
+                        isLoading={isLoading}
+                        onEdit={(s) => { setEditStudent(s); setFormData({ ...s as any }); setShowForm(true); }}
+                        onDelete={(s) => setShowDeleteConfirm(s)}
+                        onRecordPayment={(s) => setShowPayment(s)}
+                        onViewHistory={openHistory}
+                        onViewProfile={(s) => setShowProfileStudent(s)}
+                        onWhatsApp={handleWhatsApp}
+                    />
+                </div>
 
                 {totalPages > 1 && (
                     <div className="pagination">
